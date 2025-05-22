@@ -1,6 +1,8 @@
 import numpy as np
 from copy import deepcopy
 from abc import abstractmethod
+from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting
+from pymoo.util.misc import calc_crowding_distance
 
 import ray 
 @ray.remote(num_cpus=1)
@@ -48,6 +50,79 @@ class BasicSampling():
     @abstractmethod
     def _sampling_do(self, n_samples, **kwargs):
         pass
+
+
+class MOSampling(BasicSampling):
+    def do(self, n_samples):
+        X, Y_hpwl, Y_cong = None, None, None
+        Y_hpwl_all, Y_cong_all = None, None
+        macro_pos_all = []
+        
+        for i in range(self.n_repeat):
+            x, y, macro_pos = self._sampling_do(n_samples=n_samples)
+            
+            if X is None:
+                X = x
+                Y_hpwl = y["hpwl"]
+                Y_cong = y["congestion"]
+                Y_hpwl_all = y["hpwl"]
+                Y_cong_all = y["congestion"]
+            else:
+                X = np.concatenate([X, x], axis=0)
+                Y_hpwl = np.concatenate([Y_hpwl, y["hpwl"]], axis=0)
+                Y_cong = np.concatenate([Y_cong, y["congestion"]], axis=0)
+                Y_hpwl_all = np.concatenate([Y_hpwl_all, y["hpwl"]], axis=0)
+                Y_cong_all = np.concatenate([Y_cong_all, y["congestion"]], axis=0)
+            
+            macro_pos_all += macro_pos
+
+            F = np.column_stack([Y_hpwl, Y_cong])
+            
+            nds = NonDominatedSorting()
+            fronts = nds.do(F)
+            
+            selected_indices = []
+            front_idx = 0
+            
+            while len(selected_indices) < n_samples and front_idx < len(fronts):
+                current_front = fronts[front_idx]
+                
+                if len(selected_indices) + len(current_front) <= n_samples:
+                    selected_indices.extend(current_front)
+                else:
+                    remaining = n_samples - len(selected_indices)
+                    
+                    crowding_dist = calc_crowding_distance(F[current_front])
+                    
+                    selected_from_front = current_front[np.argsort(-crowding_dist)[:remaining]]
+                    selected_indices.extend(selected_from_front)
+                
+                front_idx += 1
+                
+            selected_indices = np.array(selected_indices)
+            X = X[selected_indices]
+            Y_hpwl = Y_hpwl[selected_indices]
+            Y_cong = Y_cong[selected_indices]
+
+        if self.n_repeat > 1:
+            F_all = np.column_stack([Y_hpwl_all, Y_cong_all])
+            fronts_all = nds.do(F_all)
+            
+            not_selected = []
+            count = 0
+            for front in fronts_all:
+                for idx in front:
+                    if count >= n_samples:
+                        not_selected.append(idx)
+                    count += 1
+                    
+            self.record_func(
+                hpwl=Y_hpwl_all[not_selected],
+                congestion=Y_cong_all[not_selected],
+                macro_pos_all=list(np.array(macro_pos_all)[not_selected])
+            )
+
+        return X
 
 ###################################################################
 #  Grid Guide sampling

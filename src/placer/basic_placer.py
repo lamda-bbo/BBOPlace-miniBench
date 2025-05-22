@@ -33,8 +33,12 @@ class BasicPlacer:
 
     def evaluate(self, x):
         macro_pos = self._genotype2phenotype(x)
-        hpwl = comp_res(macro_pos=macro_pos, placedb=self.placedb)
-        return hpwl, macro_pos
+        hpwl, congestion = comp_res(macro_pos, self.placedb)
+        res = {
+            "hpwl" : hpwl,
+            "congestion" : congestion,
+        }
+        return res, macro_pos
 
     @abstractmethod
     def _genotype2phenotype(self, x):

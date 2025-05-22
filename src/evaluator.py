@@ -69,6 +69,14 @@ class Evaluator:
             results = ray.get(futures)
         else:
             results = [self.placer.evaluate(x0) for x0 in x]
-        hpwl_lst      = [result[0] for result in results]
-        macro_pos_lst = [result[1] for result in results]
-        return np.array(hpwl_lst), macro_pos_lst 
+        hpwl_lst       = [result[0]["hpwl"] for result in results]
+        congestion_lst = [result[0]["congestion"] for result in results]
+        regularity_lst = [result[0]["regularity"] for result in results]
+        macro_pos_lst  = [result[1] for result in results]
+
+        res = {
+            "hpwl"       : np.array(hpwl_lst),
+            "congestion" : np.array(congestion_lst),
+            "regularity" : np.array(regularity_lst),
+        }
+        return res, macro_pos_lst 

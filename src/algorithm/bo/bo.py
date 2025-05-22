@@ -119,7 +119,8 @@ class BO(BasicAlgo):
                .do(n_samples)
         x = torch.from_numpy(x_np).to(**tkwargs)
 
-        hpwl, macro_pos_all = self._get_observations(x, return_macro_pos=True)
+        res, macro_pos_all = self._get_observations(x, return_macro_pos=True)
+        hpwl = res["hpwl"]
         self._record_results(hpwl, macro_pos_all)
         
         if isinstance(hpwl, (np.ndarray, list)):
@@ -218,7 +219,8 @@ class BO(BasicAlgo):
             indices = np.random.choice(proposed_X.shape[0], num_samples, replace=False)
             proposed_X = proposed_X[indices, :]
         
-        hpwl, macro_pos_all = self._get_observations(proposed_X, return_macro_pos=True)
+        res, macro_pos_all = self._get_observations(proposed_X, return_macro_pos=True)
+        hpwl = res["hpwl"]
         
         t_temp = time.time() 
         t_eval = t_temp - self.t 

@@ -48,8 +48,9 @@ class CMAES(BasicAlgo):
             elif self.args.placer == "sp":
                 raise ValueError("CMA-ES is not supported for SP")
             
-            fitness, macro_pos_all = self.evaluator.evaluate(processed_population)
-                
+            res, macro_pos_all = self.evaluator.evaluate(processed_population)
+            fitness = res["hpwl"]
+
             t_temp = time.time() 
             t_eval = t_temp - self.t 
             self.t_total += t_eval

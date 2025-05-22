@@ -18,5 +18,14 @@ class PlacementProblem(Problem):
     def _evaluate(self, x, out, *args, **kwargs):
         y, macro_pos = self.evaluator.evaluate(x)
 
-        out["F"] = y
+        out["F"] = y["hpwl"]
+        out["macro_pos"] = macro_pos
+
+
+class MOPlacementProblem(Problem):
+
+    def _evaluate(self, x, out, *args, **kwargs):
+        y, macro_pos = self.evaluator.evaluate(x)
+
+        out["F"] = np.concatenate([y["hpwl"], y["congestion"]])
         out["macro_pos"] = macro_pos

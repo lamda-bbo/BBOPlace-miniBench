@@ -35,7 +35,8 @@ cmaes = cma.CMAEvolutionStrategy(
 # Run optimization
 while cmaes.result.evaluations < args.max_evals:
     solutions = cmaes.ask()
-    fitness_values, macro_pos_lst = evaluator.evaluate(solutions)
+    res, macro_pos_lst = evaluator.evaluate(solutions)
+    fitness_values = res["hpwl"]
     cmaes.tell(solutions, fitness_values)
     print(f"Generation {cmaes.countiter}: Best fitness = {min(fitness_values):.6f}")
 

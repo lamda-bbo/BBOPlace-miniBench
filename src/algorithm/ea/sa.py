@@ -58,7 +58,8 @@ class SA(BasicAlgo):
 
                 self.start_from_checkpoint = False
             else:
-                now_hpwl, now_macro_pos = self.evaluator.evaluate(now_x.get("X"))
+                res, now_macro_pos = self.evaluator.evaluate(now_x.get("X"))
+                now_hpwl = res["hpwl"]
 
                 if self.population_hpwl < now_hpwl:
                     # sa
