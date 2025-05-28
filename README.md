@@ -1,6 +1,6 @@
 # BBOPlace-miniBench: Mini Benchmarking Black-Box Optimization for Chip Placement
 
-This repository contains the Python code for BBOPlace-miniBench, a mini benchmarking of BBOPlace-Bench without DREAMPlace . 
+This repository contains the Python code for BBOPlace-miniBench, a mini benchmarking of [BBOPlace-Bench](https://github.com/lamda-bbo/BBOPlace-Bench) without DREAMPlace . 
 
 ## Requirements
 + numpy==1.24.4
