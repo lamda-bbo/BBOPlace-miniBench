@@ -7,3 +7,5 @@ n_population : 1
 
 pm_prob : 1.0
 pm_eta : 30.0
+
+eval_metrics : ['hpwl']

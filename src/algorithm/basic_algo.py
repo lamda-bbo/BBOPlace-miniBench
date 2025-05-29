@@ -6,16 +6,19 @@ from abc import abstractmethod
 from utils.debug import *
 from utils.constant import INF
 from utils.random_parser import set_state
+from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting
 
 class BasicAlgo:
     def __init__(self, args, evaluator, logger) -> None:
         self.args = args
+        self.eval_metrics = args.eval_metrics
         self.evaluator = evaluator
         self.logger = logger
 
         self.n_eval = 0
         self.population = None
-        self.best_hpwl = INF
+        self.best_Y = np.zeros(len(self.eval_metrics)) + INF
+        self.fronts = []
 
         self.t_total = 0
         self.max_eval_time_second = args.max_eval_time * 60 * 60 
@@ -28,9 +31,9 @@ class BasicAlgo:
     def run(self):
         pass
 
-    def _record_results(self, hpwl, macro_pos_all, t_each_eval=0, avg_t_each_eval=0):
-        hpwl = hpwl.flatten()
-        best_idx = np.argmin(hpwl)
+    def _record_results(self, Y, macro_pos_all, t_each_eval=0, avg_t_each_eval=0):
+        pop_best_Y = np.min(Y, axis=0)
+        assert0(pop_best_Y, Y)
         pop_best_hpwl = hpwl[best_idx]
         pop_avg_hpwl = np.mean(hpwl)
         pop_std_hpwl = np.std(hpwl)

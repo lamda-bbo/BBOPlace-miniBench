@@ -85,7 +85,7 @@ def parse_args(args):
 
     cpus = psutil.cpu_count(logical=True)
     setattr(args, "n_cpu", min(args.n_cpu, cpus))
-
+    
     return args
 
 def update_args(args, config_dict:dict):

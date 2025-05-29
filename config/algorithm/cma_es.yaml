@@ -2,3 +2,5 @@ sigma: 0.5
 pop_size: 20
 
 n_sampling_repeat : 5
+
+eval_metrics : ['hpwl']

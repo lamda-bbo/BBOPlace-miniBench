@@ -14,3 +14,5 @@ sbx_prob : 1.0
 sbx_eta : 30.0
 
 n_sampling_repeat: 5
+
+eval_metrics : ['hpwl']
