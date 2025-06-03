@@ -16,10 +16,10 @@ from .ops import REGISTRY as OPS_REGISTRY
 class EA(BasicAlgo):
     def __init__(self, args, evaluator, logger):
         super(EA, self).__init__(args=args, evaluator=evaluator, logger=logger)
+        assert len(self.eval_metrics) == 1, self.eval_metrics
+
         self.node_cnt = evaluator.node_cnt
-        self.best_hpwl = INF
-        
-        self.problem = PlacementProblem(evaluator=evaluator)
+        self.problem = PlacementProblem(args=args, evaluator=evaluator)
         
     def run(self):
         checkpoint = self._load_checkpoint()
@@ -65,10 +65,10 @@ class EA(BasicAlgo):
         self.t = t_temp
 
         macro_pos_all = algo.pop.get("macro_pos")
-        hpwl = algo.pop.get("F").flatten()
+        Y = algo.pop.get("F").flatten()
 
         if not self.start_from_checkpoint:
-            self._record_results(hpwl=hpwl, 
+            self._record_results(Y=Y.reshape(-1, 1), 
                                 macro_pos_all=macro_pos_all,
                                 t_each_eval=t_each_eval, 
                                 avg_t_each_eval=avg_t_each_eval)
@@ -84,8 +84,6 @@ class EA(BasicAlgo):
 
 
     def _save_checkpoint(self, population, fitness, n_gen):
-        super()._save_checkpoint()
-
         with open(os.path.join(self.checkpoint_path, "ea.pkl"), "wb") as f:
             pickle.dump(
                 {
@@ -95,6 +93,7 @@ class EA(BasicAlgo):
                 },
                 file=f
             )
+        super()._save_checkpoint()
         
     
     def _load_checkpoint(self):

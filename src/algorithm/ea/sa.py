@@ -15,6 +15,7 @@ from .ops import REGISTRY as OPS_REGISTRY
 class SA(BasicAlgo):
     def __init__(self, args, evaluator, logger):
         super(SA, self).__init__(args=args, evaluator=evaluator, logger=logger)
+        assert len(self.eval_metrics) == 1, self.eval_metrics
         self.node_cnt = evaluator.node_cnt
         
         self.decay = args.decay
@@ -24,9 +25,10 @@ class SA(BasicAlgo):
         self.max_evals = args.max_evals
         
         self.population = None
-        self.population_hpwl = INF
+        self.population_metric = INF
 
         self.problem = PlacementProblem(
+            args=args,
             evaluator=evaluator
         )
         
@@ -51,26 +53,29 @@ class SA(BasicAlgo):
                 now_x = self.mutation.do(self.problem, self.population, inplace=True)
             
             if self.start_from_checkpoint:
-                now_hpwl = checkpoint["fitness"]
+                now_metric = checkpoint["fitness"]
 
                 self.population = now_x
-                self.population_hpwl = now_hpwl
+                self.population_metric = now_metric
 
                 self.start_from_checkpoint = False
             else:
-                res, now_macro_pos = self.evaluator.evaluate(now_x.get("X"))
-                now_hpwl = res["hpwl"]
 
-                if self.population_hpwl < now_hpwl:
+                res = {}
+                self.problem._evaluate(now_x.get("X"), res)
+                now_metric = res["F"].item()
+                now_macro_pos = res["macro_pos"]
+
+                if self.population_metric < now_metric:
                     # sa
-                    exp_argument = (self.population_hpwl - now_hpwl) / self.T 
+                    exp_argument = (self.population_metric - now_metric) / self.T 
                     probability = np.exp(exp_argument)
                     if np.random.uniform(0, 1) < probability:
                         self.population = now_x
-                        self.population_hpwl = now_hpwl
+                        self.population_metric = now_metric
                 else:
                     self.population = now_x
-                    self.population_hpwl = now_hpwl 
+                    self.population_metric = now_metric
 
             
                 t_temp = time.time()
@@ -80,7 +85,7 @@ class SA(BasicAlgo):
                 avg_t_each_eval = self.t_total / (self.n_eval + 1 * 2)
 
                 self._record_results(
-                    hpwl=np.array([now_hpwl]),
+                    Y=np.array([[now_metric]]),
                     macro_pos_all=np.array(now_macro_pos),
                     t_each_eval=t_each_eval,
                     avg_t_each_eval=avg_t_each_eval,
@@ -93,13 +98,11 @@ class SA(BasicAlgo):
             # save checkpoint
             self._save_checkpoint(
                 population=self.population,
-                fitness=self.population_hpwl,
+                fitness=self.population_metric,
                 temperature=self.T,
             )
     
     def _save_checkpoint(self, population, fitness, temperature):
-        super()._save_checkpoint()
-
         with open(os.path.join(self.checkpoint_path, "sa.pkl"), "wb") as f:
             pickle.dump(
                 {
@@ -109,6 +112,8 @@ class SA(BasicAlgo):
                 },
                 file=f
             )
+        
+        super()._save_checkpoint()
         
     
     def _load_checkpoint(self):

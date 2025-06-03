@@ -7,7 +7,7 @@ from utils.args_parser import parse_args
 from placedb import PlaceDB
 from placer import REGISTRY as PLACER_REGISTRY
 
-@ray.remote(num_cpus=1, num_gpus=1)
+@ray.remote(num_cpus=1)
 def evaluate_placer(placer, x0):
     return placer.evaluate(x0)
 
@@ -20,7 +20,6 @@ class Evaluator:
         self.placer = PLACER_REGISTRY[args.placer.lower()](args=args, placedb=self.placedb)
 
         ray.init(num_cpus=args.n_cpu,
-            num_gpus=1,
             include_dashboard=False,
             logging_level=logging.CRITICAL,
             _temp_dir=os.path.expanduser('~/tmp'),

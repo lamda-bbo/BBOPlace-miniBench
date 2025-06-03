@@ -13,8 +13,8 @@ from src.algorithm.sampling import REGISTRY as SAMPLE_REGISTRY
 class CMAES(BasicAlgo):
     def __init__(self, args, evaluator, logger):
         super(CMAES, self).__init__(args=args, evaluator=evaluator, logger=logger)
+        assert len(self.eval_metrics) == 1, self.eval_metrics
         self.node_cnt = evaluator.node_cnt
-        self.best_hpwl = INF 
 
         self.xl = evaluator.xl
         self.xu = evaluator.xu
@@ -49,7 +49,7 @@ class CMAES(BasicAlgo):
                 raise ValueError("CMA-ES is not supported for SP")
             
             res, macro_pos_all = self.evaluator.evaluate(processed_population)
-            fitness = res["hpwl"]
+            fitness = res[self.eval_metrics[0]]
 
             t_temp = time.time() 
             t_eval = t_temp - self.t 
@@ -58,7 +58,7 @@ class CMAES(BasicAlgo):
             avg_t_each_eval = self.t_total / (self.n_eval + self.args.pop_size)
             self.t = t_temp
             
-            self._record_results(fitness, macro_pos_all,
+            self._record_results(fitness.reshape(-1, 1), macro_pos_all,
                                 t_each_eval=t_each_eval,
                                 avg_t_each_eval=avg_t_each_eval)
             
@@ -72,16 +72,14 @@ class CMAES(BasicAlgo):
                 checkpoint = pickle.load(f)
                 self.start_from_checkpoint = True
         else:
-                checkpoint = None
-                self.start_from_checkpoint = False
+            checkpoint = None
+            self.start_from_checkpoint = False
         
         return checkpoint
     
 
     
     def _save_checkpoint(self):
-        super()._save_checkpoint()
-
         with open(os.path.join(self.checkpoint_path, "cma_es.pkl"), "wb") as f:
             pickle.dump(
                 {
@@ -89,4 +87,5 @@ class CMAES(BasicAlgo):
                 },
                 file=f
             )
+        super()._save_checkpoint()
         

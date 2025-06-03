@@ -16,11 +16,16 @@ This repository contains the Python code for BBOPlace-miniBench, a mini benchmar
 + pypop7==0.0.82
 
 ## File structure
-
 + `benchmarks` directory stores the benchmarks for running. Please download ISPD2005 and ICCAD2015 benchmarks and move them to `benchmarks/` (i.e., `benchmarks/ispd2005/adaptec1`, `benchmark/iccad2015/superblue1`).
 + `config` stores the hyperparameters for algorithms.
 + `script` contains scripts for code running.
 + `src` contains the source code of our benchmarking.
+
+## Features
++ Formulation: sequence pair, grid guide
++ Algorithm: Bayesian optimization, evolutionary algorithm, particle swarm optimization, evolution strategies
++ Evaluation: HPWL, congestion, regularity
+
   
 ## Usage
 Please first build the environment according to the requirements and download benchmarks via google drive: [ISPD2005](https://drive.google.com/drive/folders/1MVIOZp2rihzIFK3C_4RqJs-bUv1TW2YT?usp=sharing), [ICCAD2015](https://drive.google.com/file/d/1JEC17FmL2cM8BEAewENvRyG6aWxH53mX/view?usp=sharing).
@@ -71,6 +76,8 @@ benchmarks = ["ispd2005/adaptec1", "ispd2005/adaptec2", "ispd2005/adaptec3", "is
               "iccad2015/superblue1", "iccad2015/superblue3", "iccad2015/superblue4", "iccad2015/superblue5",
               "iccad2015/superblue7", "iccad2015/superblue10", "iccad2015/superblue16", "iccad2015/superblue18"]   # ICCAD 2015
 ```
+
+Multi-objective evaluation is supported via setting `eval_metrics=["OBJ1", "OBJ2", "OBJ3"]`. For example, `eval_metrics=["hpwl", "congestion", "regularity"]`. NSGAII is provided in `src/algorithm.ea/nsgaii.py` as the default multi-objective black-box optimization method.
 
 ### Search Space Statement
 
