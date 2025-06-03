@@ -12,7 +12,10 @@ class Logger:
         # write args
         config_dict = vars(args).copy()
         for key in list(config_dict.keys()):
-            if not (isinstance(config_dict[key], str) or isinstance(config_dict[key], int) or isinstance(config_dict[key], float)):
+            if not (isinstance(config_dict[key], str) or \
+                    isinstance(config_dict[key], int) or \
+                    isinstance(config_dict[key], float) or \
+                    isinstance(config_dict[key], list)):
                 config_dict.pop(key)
         config_str = json.dumps(config_dict, indent=4)
         with open(os.path.join(args.result_path, "config.json"), 'w') as config_file:

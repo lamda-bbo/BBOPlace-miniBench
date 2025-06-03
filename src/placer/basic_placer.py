@@ -11,6 +11,7 @@ import matplotlib.patches as patches
 class BasicPlacer:
     def __init__(self, args, placedb):
         self.args = args
+        self.eval_metrics = args.eval_metrics
         self.placedb = placedb
 
         self.canvas_width  = placedb.canvas_width
@@ -24,7 +25,9 @@ class BasicPlacer:
         self.metrics_file = os.path.join(args.result_path, "metrics.csv")
         with open(self.metrics_file, 'a', newline='') as f:
             writer = csv.writer(f)
-            header = ["n_eval", "his_best_hpwl", "pop_best_hpwl", "pop_avg_hpwl", "pop_std_hpwl", "t_each_eval", "avg_t_each_eval"]
+            header = ["n_eval"] + \
+                     [f"{prefix}_{metric}" for prefix in ["current", "his_best", "pop_best", "pop_avg", "pop_std"] for metric in self.eval_metrics] + \
+                     ["t_each_eval", "avg_t_each_eval"]
             writer.writerow(header)
         
         self.placement_saving_lst = []
@@ -33,16 +36,20 @@ class BasicPlacer:
 
     def evaluate(self, x):
         macro_pos = self._genotype2phenotype(x)
-        hpwl = comp_res(macro_pos=macro_pos, placedb=self.placedb)
-        return hpwl, macro_pos
+        hpwl, congestion, regularity = comp_res(macro_pos, self.placedb)
+        res = {
+            "hpwl": hpwl,
+            "congestion": congestion,
+            "regularity": regularity,
+        }
+        return res, macro_pos
 
     @abstractmethod
     def _genotype2phenotype(self, x):
         pass
 
-    def save_placement(self, macro_pos, n_eval, hpwl):
+    def save_placement(self, macro_pos, n_eval):
         logging.info("Placer saving placement")
-        scale_hpwl, n_power = get_n_power(hpwl)
 
         delete_file_name = None
         if len(self.placement_saving_lst) == self.n_max_saving_placement:
@@ -50,7 +57,7 @@ class BasicPlacer:
         
     
         file_name = os.path.join(self.placement_save_path, 
-                                f'{n_eval}_{scale_hpwl:.2f}e{n_power}.{self.args.file_format}')
+                                f'{n_eval}_{self.args.design_name}.{self.args.file_format}')
         type_map = {
             "pl" : self.placedb.to_pl,
             "def" : self.placedb.to_def
@@ -64,15 +71,14 @@ class BasicPlacer:
         self.placement_saving_lst.append(file_name)
         assert len(self.placement_saving_lst) <= self.n_max_saving_placement
     
-    def plot(self, macro_pos, n_eval, hpwl):
+    def plot(self, macro_pos, n_eval):
         logging.info("Placer ploting figure")
-        scale_hpwl, n_power = get_n_power(hpwl)
 
         delete_file_name = None
         if len(self.figure_saving_lst) == self.n_max_saving_placement:
             delete_file_name = self.figure_saving_lst.pop(0)
 
-        file_name = os.path.join(self.fig_save_path, f"{n_eval}_{scale_hpwl:.2f}e{n_power}.png")
+        file_name = os.path.join(self.fig_save_path, f"{n_eval}_{self.args.design_name}.png")
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect="auto")
         ax.axes.xaxis.set_visible(False)
@@ -105,16 +111,19 @@ class BasicPlacer:
     def save_metrics(
             self, 
             n_eval, 
-            his_best_hpwl, 
-            pop_best_hpwl, 
-            pop_avg_hpwl, 
-            pop_std_hpwl,
+            current_Y,
+            his_best_Y, 
+            pop_best_Y, 
+            pop_avg_Y, 
+            pop_std_Y,
             t_each_eval=0,
             avg_t_each_eval=0
             ):
         with open(self.metrics_file, 'a', newline='') as f:
             writer = csv.writer(f)
-            content = [n_eval, his_best_hpwl, pop_best_hpwl, pop_avg_hpwl, pop_std_hpwl, t_each_eval, avg_t_each_eval]
+            content = [n_eval] + \
+                      [value for Y in [current_Y, his_best_Y, pop_best_Y, pop_avg_Y, pop_std_Y] for value in Y] + \
+                      [t_each_eval, avg_t_each_eval]
             writer.writerow(content)
 
     def _save_checkpoint(self, checkpoint_path):

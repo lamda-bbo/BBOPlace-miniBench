@@ -12,3 +12,4 @@ REGISTRY["crossover"] = {
     "gg" : GGUniformCrossover,
     "sp" : SPOrderCrossover
 }
+

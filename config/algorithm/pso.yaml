@@ -1,3 +1,5 @@
 n_population : 50
 
 n_sampling_repeat : 5
+
+eval_metrics : ['hpwl']

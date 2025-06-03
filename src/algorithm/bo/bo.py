@@ -78,7 +78,8 @@ class IntegerRandomSampling(FloatRandomSampling):
 class BO(BasicAlgo):
     def __init__(self, args, evaluator, logger):
         super(BO, self).__init__(args=args, evaluator=evaluator, logger=logger)
-        
+        assert len(self.eval_metrics) == 1, self.eval_metrics
+
         self.n_var = evaluator.node_cnt
         
         self.evaluator = evaluator
@@ -119,13 +120,13 @@ class BO(BasicAlgo):
                .do(n_samples)
         x = torch.from_numpy(x_np).to(**tkwargs)
 
-        hpwl, macro_pos_all = self._get_observations(x, return_macro_pos=True)
-        self._record_results(hpwl, macro_pos_all)
+        Y, macro_pos_all = self._get_observations(x, return_macro_pos=True)
+        self._record_results(Y.reshape(-1, 1), macro_pos_all)
         
-        if isinstance(hpwl, (np.ndarray, list)):
-            hpwl = torch.Tensor(hpwl).to(**tkwargs)
+        if isinstance(Y, (np.ndarray, list)):
+            Y = torch.Tensor(Y).to(**tkwargs)
         
-        return x, hpwl.reshape(-1, 1)
+        return x, Y.reshape(-1, 1)
     
     def _get_kernel(self, kernel_type):
         if kernel_type.lower() == "tc":
@@ -167,7 +168,7 @@ class BO(BasicAlgo):
 
         y, macro_pos_all = self.evaluator.evaluate(x)
         
-        return y, (macro_pos_all if return_macro_pos else None)
+        return y[self.eval_metrics[0]], (macro_pos_all if return_macro_pos else None)
         
     def _optimize_acqf_and_get_observations(self, acqf, num_samples=1):
         if self.placer_type == "gg":
@@ -218,7 +219,7 @@ class BO(BasicAlgo):
             indices = np.random.choice(proposed_X.shape[0], num_samples, replace=False)
             proposed_X = proposed_X[indices, :]
         
-        hpwl, macro_pos_all = self._get_observations(proposed_X, return_macro_pos=True)
+        Y, macro_pos_all = self._get_observations(proposed_X, return_macro_pos=True)
         
         t_temp = time.time() 
         t_eval = t_temp - self.t 
@@ -227,12 +228,12 @@ class BO(BasicAlgo):
         avg_t_each_eval = self.t_total / (self.n_eval + self.n_init)
         self.t = t_temp
         
-        self._record_results(hpwl, macro_pos_all,
+        self._record_results(Y.reshape(-1, 1), macro_pos_all,
                              t_each_eval=t_each_eval,
                              avg_t_each_eval=avg_t_each_eval)
         
         return torch.from_numpy(proposed_X).to(**tkwargs), \
-            torch.from_numpy(hpwl).to(**tkwargs)
+            torch.from_numpy(Y).to(**tkwargs)
         
     def run(self):
         self.t = time.time() 
@@ -282,8 +283,8 @@ class BO(BasicAlgo):
             
             if self.args.verbose:
                 print(
-                    f"\nBatch {i:>2}: best_hpwl = "
-                    f"{self.best_hpwl}    "
+                    f"\nBatch {i:>2}: best_{self.eval_metrics[0]} = "
+                    f"{self.best_Y[0]}    "
                     f"time = {t1-t0:>4.2f}.",
                 )
             else:
@@ -303,8 +304,6 @@ class BO(BasicAlgo):
             
         
     def _save_checkpoint(self):
-        super()._save_checkpoint()
-        
         model_file = os.path.join(self.checkpoint_path, "bo.pt")
         self.model = self.model.to("cpu")
         checkpoint = {
@@ -314,4 +313,6 @@ class BO(BasicAlgo):
         }
         torch.save(obj=checkpoint, f=model_file)
         self.model = self.model.to(**tkwargs)
+
+        super()._save_checkpoint()
 

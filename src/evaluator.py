@@ -7,7 +7,7 @@ from utils.args_parser import parse_args
 from placedb import PlaceDB
 from placer import REGISTRY as PLACER_REGISTRY
 
-@ray.remote(num_cpus=1, num_gpus=1)
+@ray.remote(num_cpus=1)
 def evaluate_placer(placer, x0):
     return placer.evaluate(x0)
 
@@ -20,7 +20,6 @@ class Evaluator:
         self.placer = PLACER_REGISTRY[args.placer.lower()](args=args, placedb=self.placedb)
 
         ray.init(num_cpus=args.n_cpu,
-            num_gpus=1,
             include_dashboard=False,
             logging_level=logging.CRITICAL,
             _temp_dir=os.path.expanduser('~/tmp'),
@@ -69,6 +68,14 @@ class Evaluator:
             results = ray.get(futures)
         else:
             results = [self.placer.evaluate(x0) for x0 in x]
-        hpwl_lst      = [result[0] for result in results]
-        macro_pos_lst = [result[1] for result in results]
-        return np.array(hpwl_lst), macro_pos_lst 
+        hpwl_lst       = [result[0]["hpwl"] for result in results]
+        congestion_lst = [result[0]["congestion"] for result in results]
+        regularity_lst = [result[0]["regularity"] for result in results]
+        macro_pos_lst  = [result[1] for result in results]
+
+        res = {
+            "hpwl"       : np.array(hpwl_lst),
+            "congestion" : np.array(congestion_lst),
+            "regularity" : np.array(regularity_lst),
+        }
+        return res, macro_pos_lst 
